@@ -51,7 +51,7 @@ class DigitClassifier():
         return np.argmax(output)
 
 
-    def train(self, images, labels, epochs, batch_size=10, learning_rate=3.0, regularization_factor=5.0):
+    def train(self, images, labels, epochs, batch_size=10, learning_rate=0.15, regularization_factor=5.0):
         """
         Trains the backend neural network to recognize handwritten digits.
         :param images: Training images containing handwritten digits.
