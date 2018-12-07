@@ -28,14 +28,19 @@ def sigmoid_derivative(z):
 class NeuralNetwork():
     """
     A multilayer perceptron (MLP), a class of feedforward artificial neural network.
-    The cost function C used is defined as
-      C = 1/n * S(1/2 * ||a - y||^2),
+    The cost function C used is defined as (the last term is a L2 regularization)
+      C = 1/n * Sx(1/2 * ||a - y||^2) + h * 1/n * Sw(1/2 * w^2),
     where
       a is the actual output from the network,
       y is the expected output from the network,
       n is the number of training samples,
-      S is the sum over all traing samples,
-      ||v|| denotes the length of vector v.
+      Sx is the sum over all training samples,
+      ||v|| denotes the length of vector v,
+      h is the regularization factor,
+      w is the weight,
+      Sw is the sum over all weights.
+    The regularization term reduces overfitting since it punishes large weights. Smaller weights
+    means a less complex function, where small changes in the input will not make a great impact.
     """
     def __init__(self, layer_sizes, activation_function=(sigmoid, sigmoid_derivative)):
         """
@@ -68,7 +73,7 @@ class NeuralNetwork():
         return x
 
 
-    def train(self, training_data, epochs, batch_size, learning_rate):
+    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor):
         """
         Trains the network using stochastic gradient descent.
         :param training_data: List of training pairs (input, expected output), which must match the
@@ -77,14 +82,16 @@ class NeuralNetwork():
         :param batch_size: Number of training samples in a batch, used to estimate the gradient for
                            a single gradient descent step.
         :param learning_rate: The gradient descent step size.
+        :param regularization_factor: The amount of regularization.
         """
         for _ in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
                 batch = training_data[i:i + batch_size]
                 bias_gradients, weight_gradients = self._gradient(batch)
+                weight_decay = 1 - (learning_rate * (regularization_factor / len(training_data)))
                 self._biases -= learning_rate * bias_gradients
-                self._weights -= learning_rate * weight_gradients
+                self._weights = (weight_decay * self._weights) - (learning_rate * weight_gradients)
 
 
     def _gradient(self, training_data):
