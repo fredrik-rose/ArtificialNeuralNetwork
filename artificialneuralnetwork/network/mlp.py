@@ -28,22 +28,26 @@ def _sigmoid_derivative(z):
 class NeuralNetwork():
     """
     A multilayer perceptron (MLP), a class of feedforward artificial neural network.
-    The cost function C used is defined as (the last term is a L2 regularization)
-      C = 1/n * Sx(1/2 * ||a - y||^2) + h * 1/n * Sw(1/2 * w^2),
+    The cross-entropy cost function, C, is used and is defined as (the last term is a L2
+    regularization)
+        C = -1/n * Sx(y*ln(a) + (1-y)*ln(1-a)) + h * 1/n * Sw(1/2 * w^2),
     where
-      a is the actual output from the network,
-      y is the expected output from the network,
-      n is the number of training samples,
-      Sx is the sum over all training samples,
-      ||v|| denotes the length of vector v,
-      h is the regularization factor,
-      w is the weight,
-      Sw is the sum over all weights.
-    The regularization term reduces overfitting since it punishes large weights. Smaller weights
-    means a less complex function, where small changes in the input will not make a great impact.
-
+        a is the actual output from the network,
+        y is the expected output from the network,
+        ln is the logarithmic function,
+        n is the number of training samples,
+        Sx is the sum over all training samples,
+        h is the regularization factor,
+        w is the weight,
+        Sw is the sum over all weights.
+    The cross-entropy cost function eliminates the potential learning slowdown caused by the
+    derivative of the activation function, since the derivative gets canceled out when calculating
+    the gradient. This cost function also adjusts the weights according to the error in the output:
+    the larger the error, the faster the neuron will learn. The regularization term reduces
+    overfitting since it punishes large weights. Smaller weights means a less complex function,
+    where small changes in the input will not make a great impact on the output.
     Notations:
-        c: The cost for a single training sample, c = 1/2 * ||a - y||^2.
+        c: The cost for a single training sample, c = y*ln(a) + (1-y)*ln(1-a).
         a: The neuron activation, a = activation_function(z).
         z: The neuron input, z = w*a + b.
         b: The bias.
@@ -185,7 +189,7 @@ class NeuralNetwork():
         bias_gradients = []
         weight_gradients = []
 
-        dc_dz = self._cost_function_derivative(activations[-1], neuron_inputs[-1], y)
+        dc_dz = self._cost_function_derivative(activations[-1], y)
 
         bias_gradients.append(calculate_dc_db(dc_dz))
         weight_gradients.append(calculate_dc_dw(dc_dz, activations[-2]))
@@ -204,20 +208,15 @@ class NeuralNetwork():
 
         return bias_gradients[::-1], weight_gradients[::-1]
 
-
-    def _cost_function_derivative(self, network_output, neuron_input, expected_output):
+    @staticmethod
+    def _cost_function_derivative(network_output, expected_output):
         """
         Calculates the derivative of the cost function w.r.t. the neuron inputs of the last layer,
         z, for a single training sample, c.
-            dc_da = a - y,
-            da_dz = activation_function'(z),
-            dc_dz = dc_da * da_dz = (a - y) * activation_function'(z).
+            dc_dz = a - y (the derivation is too lengthy to include here).
         :param network_output: The output of the network, a.
-        :param neuron_input: The input to the neurons of the last layer, z.
         :param expected_output: The expected output, y.
         :return: dc_dz.
         """
-        dc_da = network_output - expected_output
-        da_dz = self._activation_function_derivative(neuron_input)
-        dc_dz = np.multiply(dc_da, da_dz)  # Apply the chain rule.
+        dc_dz = network_output - expected_output
         return dc_dz
