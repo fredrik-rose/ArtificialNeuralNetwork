@@ -39,7 +39,10 @@ class NeuralNetwork():
     """
     def __init__(self, layer_sizes, activation_function=(sigmoid, sigmoid_derivative)):
         """
-        Initialize weights and biases to random values.
+        Initialize weights and biases to random values. The values are taken from the normal
+        distribution with mean 0 and variance 1/n, where n is the number of inputs to the
+        corresponding neuron. The reason for the chose of the variance is to avoid saturating the
+        activation function for neurons with many inputs.
         :param layer_sizes: Tuple containing the number of neurons in each layer, including input,
                             hidden and output layers. Example with 2 hidden layer: (3,4,3,1).
         :param activation_function: Tuple containing the neuron activation function and its derivative.
@@ -47,7 +50,7 @@ class NeuralNetwork():
         self._number_of_layers = len(layer_sizes)
         self._biases = np.asarray([np.random.randn(size, 1)
                                    for size in layer_sizes[1:]])
-        self._weights = np.asarray([np.random.randn(size, input_size)
+        self._weights = np.asarray([np.random.randn(size, input_size) / np.sqrt(input_size)
                                     for input_size, size in zip(layer_sizes[:-1], layer_sizes[1:])])
         self._activation_function = activation_function[0]
         self._activation_function_derivative = activation_function[1]
