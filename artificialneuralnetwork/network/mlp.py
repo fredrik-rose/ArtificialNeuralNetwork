@@ -41,6 +41,14 @@ class NeuralNetwork():
       Sw is the sum over all weights.
     The regularization term reduces overfitting since it punishes large weights. Smaller weights
     means a less complex function, where small changes in the input will not make a great impact.
+
+    Notations:
+        c: The cost for a single training sample, c = 1/2 * ||a - y||^2.
+        a: The neuron activation, a = activation_function(z).
+        z: The neuron input, z = w*a + b.
+        b: The bias.
+        w: The weight.
+        dv_du: The derivative of v w.r.t u.
     """
     def __init__(self, layer_sizes, activation_function=(sigmoid, sigmoid_derivative)):
         """
@@ -122,15 +130,48 @@ class NeuralNetwork():
         :param y: Expected output, shall be a column vector of the same length as the output layer.
         :return: Tuple containing bias gradients and weight gradients.
         """
-        # Notations:
-        #   c: The cost function for a single training sample,
-        #   a: The neuron activation function,
-        #   z: The neuron input function,
-        #   dv_du: The derivative of v w.r.t u.
-        bias_gradients = []
-        weight_gradients = []
+        def calculate_dc_db(dc_dz):
+            """
+            Calculates the derivative of the cost function w.r.t. the biases, dc_db.
+                dz_db = 1,
+                dc_db = dc_dz * dz_db = dc_dz * 1.
+            :param dc_dz: The derivative of the cost function w.r.t. the neuron input.
+            :return: dc_db.
+            """
+            dz_db = 1.0
+            dc_db = np.multiply(dc_dz, dz_db)  # Apply the chain rule. NOTE: could be optimized since dz_db = 1.
+            return dc_db
+
+        def calculate_dc_dw(dc_dz, activation):
+            """
+            Calculates the derivative of the cost function w.r.t. the weights, dc_dw.
+                dz_dw = a,
+                dc_dw = dc_dz * dz_dw = dc_dz * a.
+            :param dc_dz: The derivative of the cost function w.r.t. the neuron input.
+            :param activation: The activation of the previous layer.
+            :return: dc_dw.
+            """
+            dz_dw = activation
+            # Use linear algebra to get all the weights and the correct shape.
+            dc_dw = np.dot(dc_dz, dz_dw.transpose())  # Apply the chain rule.
+            return dc_dw
+
+        def calculate_dc_da(dc_dz, weight):
+            """
+            Calculates the derivative of the cost function w.r.t. the activation of the previous layer, dc_da.
+                dz_da = w,
+                dc_da = dc_dz * dz_da = dc_dz * w.
+            :param dc_dz: The derivative of the cost function w.r.t. the neuron input.
+            :param weight: The weight.
+            :return: dc_da.
+            """
+            dz_da = weight
+            # Use linear algebra to get all the activations and the correct shape.
+            dc_da = np.dot(dz_da.transpose(), dc_dz)  # Apply the chain rule.
+            return dc_da
 
         # Feedforward step.
+
         # NOTE: This does the same thing as the feedforward method but also saves the output at each iteration.
         activations = [x]
         neuron_inputs = []
@@ -141,39 +182,43 @@ class NeuralNetwork():
             activations.append(x)
 
         # Feedbackward step.
-        # Calculate the derivative of the cost function w.r.t. the activation of the last layer dc_da.
-        dc_da = self._cost_function_derivative(activations[-1], y)
-        for layer in range(1, self._number_of_layers):
+
+        bias_gradients = []
+        weight_gradients = []
+
+        dc_dz = self._cost_function_derivative(activations[-1], neuron_inputs[-1], y)
+
+        bias_gradients.append(calculate_dc_db(dc_dz))
+        weight_gradients.append(calculate_dc_dw(dc_dz, activations[-2]))
+
+        for layer in range(2, self._number_of_layers):
+            dc_da = calculate_dc_da(dc_dz, self._weights[-layer + 1])
+
             # Calculate the derivative of the cost function w.r.t. the neuron inputs, dc_dz.
+            #     da_dz = activation_function'(z),
+            #     dc_dz = dc_da * da_dz = dc_da * activation_function'(z).
             da_dz = self._activation_function_derivative(neuron_inputs[-layer])
             dc_dz = np.multiply(dc_da, da_dz)  # Apply the chain rule.
 
-            # Calculate the derivative of the cost function w.r.t. the biases, dc_db.
-            dz_db = 1.0  # NOTE: Could be optimized sinze dz_db = 1.
-            dc_db = np.multiply(dc_dz, dz_db)  # Apply the chain rule.
-            bias_gradients.append(dc_db)
-
-            # Calculate the derivative of the cost function w.r.t. the weights, dc_dw.
-            dz_dw = activations[-layer - 1]
-            # Use linear algebra to get all the weights and the correct shape.
-            dc_dw = np.dot(dc_dz, dz_dw.transpose())  # Apply the chain rule
-            weight_gradients.append(dc_dw)
-
-            # Calculate the derivative of the cost function w.r.t. the activation of the previous layer, dc_da.
-            dz_da = self._weights[-layer]
-            # Use linear algebra to get all the activations and the correct shape.
-            dc_da = np.dot(dz_da.transpose(), dc_dz)  # Apply the chain rule.
+            bias_gradients.append(calculate_dc_db(dc_dz))
+            weight_gradients.append(calculate_dc_dw(dc_dz, activations[-layer - 1]))
 
         return bias_gradients[::-1], weight_gradients[::-1]
 
 
-    def _cost_function_derivative(self, network_output, expected_output):
+    def _cost_function_derivative(self, network_output, neuron_input, expected_output):
         """
-        The derivative of the cost function w.r.t. the network output for a single training sample, Cx'.
-            C = 1/(n) * S(Cx),
-            Cx = 1/2 * ||a - y||^2.
-        :param network_output: The output of the network.
-        :param expected_output: The expected output.
-        :return: Cx'.
+        Calculates the derivative of the cost function w.r.t. the neuron inputs of the last layer,
+        z, for a single training sample, c.
+            dc_da = a - y,
+            da_dz = activation_function'(z),
+            dc_dz = dc_da * da_dz = (a - y) * activation_function'(z).
+        :param network_output: The output of the network, a.
+        :param neuron_input: The input to the neurons of the last layer, z.
+        :param expected_output: The expected output, y.
+        :return: dc_dz.
         """
-        return network_output - expected_output
+        dc_da = network_output - expected_output
+        da_dz = self._activation_function_derivative(neuron_input)
+        dc_dz = np.multiply(dc_da, da_dz)  # Apply the chain rule.
+        return dc_dz
