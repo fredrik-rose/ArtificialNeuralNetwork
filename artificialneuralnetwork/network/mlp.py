@@ -52,7 +52,7 @@ class NeuralNetwork():
         z: The neuron input, z = w*a + b.
         b: The bias.
         w: The weight.
-        dv_du: The derivative of v w.r.t u.
+        df_dg: The derivative of f w.r.t g.
     """
     def __init__(self, layer_sizes):
         """
@@ -68,6 +68,7 @@ class NeuralNetwork():
                                    for size in layer_sizes[1:]])
         self._weights = np.asarray([np.random.randn(size, input_size) / np.sqrt(input_size)
                                     for input_size, size in zip(layer_sizes[:-1], layer_sizes[1:])])
+        self._velocities = np.asarray([np.zeros(w.shape) for w in self._weights])
         self._activation_function = _sigmoid
         self._activation_function_derivative = _sigmoid_derivative
 
@@ -84,9 +85,17 @@ class NeuralNetwork():
         return x
 
 
-    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor):
+    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum):
         """
-        Trains the network using stochastic gradient descent.
+        Trains the network using stochastic gradient descent. The update rules look like follows
+            b' = b - r*dc_db,
+            v' = u*v - r*(dc_dw + dr_dw),
+            w' = w + v',
+        where
+            dr_dw is the derivative of the regularization term of the cost function w.r.t the weight: (h/n)*w,
+            r is the learning rate,
+            u is the momentum,
+            v is the velocity.
         :param training_data: List of training pairs (input, expected output), which must match the
                               size of the input and output layers, respectively.
         :param epochs: Number of training epochs, i.e. number of passes over all the training samples.
@@ -94,15 +103,20 @@ class NeuralNetwork():
                            a single gradient descent step.
         :param learning_rate: The gradient descent step size.
         :param regularization_factor: The amount of regularization.
+        :param momentum: The amount of smoothing and acceleration [0,1].
         """
         for _ in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
                 batch = training_data[i:i + batch_size]
                 bias_gradients, weight_gradients = self._gradient(batch)
-                weight_decay = 1 - (learning_rate * (regularization_factor / len(training_data)))
-                self._biases -= learning_rate * bias_gradients
-                self._weights = (weight_decay * self._weights) - (learning_rate * weight_gradients)
+                # Add the derivative of the regularization term w.r.t the weight.
+                weight_gradients += (regularization_factor / len(training_data)) * self._weights
+                # The momentum acts as a smoother (it is essentially an exponential moving average filter) and an
+                # accelerator since it helps keeping the "course" in "ravines".
+                self._velocities = (momentum * self._velocities) + (learning_rate * -weight_gradients)
+                self._biases += learning_rate * -bias_gradients
+                self._weights += self._velocities
 
 
     def _gradient(self, training_data):
