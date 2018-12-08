@@ -34,7 +34,7 @@ def _load_object(file_path):
         return pickle.load(file)
 
 
-def _train(digit_classifier, evaluate=False, epochs=30):
+def _train(digit_classifier, evaluate=False, epochs=40):
     """
     Trains a digit classifier.
     :param digit_classifier: The classifier.

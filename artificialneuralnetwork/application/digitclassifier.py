@@ -32,7 +32,7 @@ class DigitClassifier():
     """
     A classifier that recognizes handwritten digits.
     """
-    def __init__(self, image_resolution, hidden_layers=(30,)):
+    def __init__(self, image_resolution, hidden_layers=(100, 30)):
         """
         Initializes the backend neural network.
         :param image_resolution: Number of pixels in the images to be classified.
@@ -51,7 +51,7 @@ class DigitClassifier():
         return np.argmax(output)
 
 
-    def train(self, images, labels, epochs, batch_size=10, learning_rate=0.15, regularization_factor=5.0, momentum=0.1):
+    def train(self, images, labels, epochs, batch_size=20, learning_rate=0.1, regularization_factor=3.0, momentum=0.2):
         """
         Trains the backend neural network to recognize handwritten digits.
         :param images: Training images containing handwritten digits.
