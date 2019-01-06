@@ -71,7 +71,8 @@ class NeuralNetwork():
         self._velocities = np.asarray([np.zeros(w.shape) for w in self._weights])
         self._activation_function = _sigmoid
         self._activation_function_derivative = _sigmoid_derivative
-
+        self._activations = []
+        self._neuron_inputs = []
 
     def feedforward(self, x):
         """
@@ -79,11 +80,14 @@ class NeuralNetwork():
         :param x: Input, shall be a column vector of the same length as the input layer.
         :return: Network output, a column vector of the same length as the output layer.
         """
+        self._activations = [x]
+        self._neuron_inputs = []
         for weights, biases in zip(self._weights, self._biases):
             z = np.dot(weights, x) + biases
             x = self._activation_function(z)
+            self._neuron_inputs.append(z)
+            self._activations.append(x)
         return x
-
 
     def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum):
         """
@@ -118,7 +122,6 @@ class NeuralNetwork():
                 self._biases += learning_rate * -bias_gradients
                 self._weights += self._velocities
 
-
     def _gradient(self, training_data):
         """
         Calculates the gradient of the cost function for all training samples.
@@ -138,7 +141,6 @@ class NeuralNetwork():
         bias_gradients /= len(training_data)
         weight_gradients /= len(training_data)
         return bias_gradients, weight_gradients
-
 
     def _backpropagation(self, x, y):
         """
@@ -189,24 +191,17 @@ class NeuralNetwork():
 
         # Feedforward step.
 
-        # NOTE: This does the same thing as the feedforward method but also saves the output at each iteration.
-        activations = [x]
-        neuron_inputs = []
-        for weights, biases in zip(self._weights, self._biases):
-            z = np.dot(weights, x) + biases
-            x = self._activation_function(z)
-            neuron_inputs.append(z)
-            activations.append(x)
+        self.feedforward(x)
 
         # Feedbackward step.
 
         bias_gradients = []
         weight_gradients = []
 
-        dc_dz = self._cost_function_derivative(activations[-1], y)
+        dc_dz = self._cost_function_derivative(self._activations[-1], y)
 
         bias_gradients.append(calculate_dc_db(dc_dz))
-        weight_gradients.append(calculate_dc_dw(dc_dz, activations[-2]))
+        weight_gradients.append(calculate_dc_dw(dc_dz, self._activations[-2]))
 
         for layer in range(2, self._number_of_layers):
             dc_da = calculate_dc_da(dc_dz, self._weights[-layer + 1])
@@ -214,11 +209,11 @@ class NeuralNetwork():
             # Calculate the derivative of the cost function w.r.t. the neuron inputs, dc_dz.
             #     da_dz = activation_function'(z),
             #     dc_dz = dc_da * da_dz = dc_da * activation_function'(z).
-            da_dz = self._activation_function_derivative(neuron_inputs[-layer])
+            da_dz = self._activation_function_derivative(self._neuron_inputs[-layer])
             dc_dz = np.multiply(dc_da, da_dz)  # Apply the chain rule.
 
             bias_gradients.append(calculate_dc_db(dc_dz))
-            weight_gradients.append(calculate_dc_dw(dc_dz, activations[-layer - 1]))
+            weight_gradients.append(calculate_dc_dw(dc_dz, self._activations[-layer - 1]))
 
         return bias_gradients[::-1], weight_gradients[::-1]
 
