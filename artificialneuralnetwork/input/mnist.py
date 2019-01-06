@@ -15,6 +15,6 @@ def load_mnist(images_path, labels_path):
     :param labels_path: Path to IDX file containing the corresponding MNIST labels.
     :return: Dict containing the MNIST data; images and labels.
     """
-    images = idx.parse(images_path) / 255
+    images = idx.parse(images_path)
     labels = idx.parse(labels_path)
     return {'images': images, 'labels': labels}
