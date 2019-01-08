@@ -53,6 +53,8 @@ class NeuralNetwork():
         b: The bias.
         w: The weight.
         df_dg: The derivative of f w.r.t g.
+    Some interesting techniques that could improved learning are not implemented, for example batch
+    normalization and dropout.
     """
     def __init__(self, layer_sizes):
         """

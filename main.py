@@ -132,7 +132,7 @@ def main():
     try:
         digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH)
     except FileNotFoundError:
-        sys.exit("ERROR: Could not find a trained classifer. Run again with -t.")
+        sys.exit("ERROR: Could not find a trained classifier. Run again with -t.")
     if args.evaluate:
         correct, total = _evaluate(digit_classifier)
         print("TP: {0:.2f}% [{1}/{2}]".format((correct / total) * 100, correct, total), flush=True)
