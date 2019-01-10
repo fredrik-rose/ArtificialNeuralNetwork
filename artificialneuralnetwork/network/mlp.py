@@ -54,7 +54,7 @@ class NeuralNetwork():
         w: The weight.
         df_dg: The derivative of f w.r.t g.
     Some interesting techniques that could improved learning are not implemented, for example batch
-    normalization and dropout.
+    normalization.
     """
     def __init__(self, layer_sizes):
         """
@@ -75,23 +75,32 @@ class NeuralNetwork():
         self._activation_function_derivative = _sigmoid_derivative
         self._activations = []
         self._neuron_inputs = []
+        self._dropout_masks = []
 
-    def feedforward(self, x):
+    def feedforward(self, x, dropout=0):
         """
         Runs the network on a given input.
         :param x: Input, shall be a column vector of the same length as the input layer.
+        :param dropout: The probability that a neuron is removed from the network. Do not use unless
+                        you are absolutely sure you know what you are doing.
         :return: Network output, a column vector of the same length as the output layer.
         """
+        x = np.copy(x)  # We do not want to change the input when performing dropout.
         self._activations = [x]
         self._neuron_inputs = []
+        self._dropout_masks = []
         for weights, biases in zip(self._weights, self._biases):
+            # Scale to compensate for the removed neurons.
+            droput_mask = np.random.binomial(1, 1 - dropout, x.shape) / (1 - dropout)
+            x *= droput_mask
             z = np.dot(weights, x) + biases
             x = self._activation_function(z)
+            self._dropout_masks.append(droput_mask)
             self._neuron_inputs.append(z)
             self._activations.append(x)
         return x
 
-    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum):
+    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput):
         """
         Trains the network using stochastic gradient descent. The update rules look like follows
             b' = b - r*dc_db,
@@ -110,12 +119,14 @@ class NeuralNetwork():
         :param learning_rate: The gradient descent step size.
         :param regularization_factor: The amount of regularization.
         :param momentum: The amount of smoothing and acceleration [0,1].
+        :param dropout: The probability that a neuron is removed from the network. A regularization
+                        technique to reduce overfitting [0,1[.
         """
         for _ in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
                 batch = training_data[i:i + batch_size]
-                bias_gradients, weight_gradients = self._gradient(batch)
+                bias_gradients, weight_gradients = self._gradient(batch, droput)
                 # Add the derivative of the regularization term w.r.t the weight.
                 weight_gradients += (regularization_factor / len(training_data)) * self._weights
                 # The momentum acts as a smoother (it is essentially an exponential moving average filter) and an
@@ -124,31 +135,33 @@ class NeuralNetwork():
                 self._biases += learning_rate * -bias_gradients
                 self._weights += self._velocities
 
-    def _gradient(self, training_data):
+    def _gradient(self, training_data, droput):
         """
         Calculates the gradient of the cost function for all training samples.
         Use the fact that the derivative of a sum is equal to the sum of the derivatives of each
         term, when taking the derivative of the cost function.
         :param training_data: List of training pairs (input, expected output), which must match the
                               size of the input and output layers, respectively.
+        :param dropout: The probability that a neuron is removed from the network.
         :return: Tuple containing bias gradients and weight gradients.
         """
         # TODO: It is possible to change the backpropagation function slightly, to handle multiple training samples.
         bias_gradients = np.asarray([np.zeros(b.shape) for b in self._biases])
         weight_gradients = np.asarray([np.zeros(w.shape) for w in self._weights])
         for x, y in training_data:
-            sample_bias_gradients, sample_weight_gradients = self._backpropagation(x, y)
+            sample_bias_gradients, sample_weight_gradients = self._backpropagation(x, y, droput)
             bias_gradients += np.asarray(sample_bias_gradients)
             weight_gradients += np.asarray(sample_weight_gradients)
         bias_gradients /= len(training_data)
         weight_gradients /= len(training_data)
         return bias_gradients, weight_gradients
 
-    def _backpropagation(self, x, y):
+    def _backpropagation(self, x, y, droput):
         """
         Calculates the gradient of the cost function for a single training sample, using backpropagation.
         :param x: Input, shall be a column vector of the same length as the input layer.
         :param y: Expected output, shall be a column vector of the same length as the output layer.
+        :param dropout: The probability that a neuron is removed from the network.
         :return: Tuple containing bias gradients and weight gradients.
         """
         def calculate_dc_db(dc_dz):
@@ -193,7 +206,7 @@ class NeuralNetwork():
 
         # Feedforward step.
 
-        self.feedforward(x)
+        self.feedforward(x, droput)
 
         # Feedbackward step.
 
@@ -207,6 +220,7 @@ class NeuralNetwork():
 
         for layer in range(2, self._number_of_layers):
             dc_da = calculate_dc_da(dc_dz, self._weights[-layer + 1])
+            dc_da *= self._dropout_masks[-layer + 1]  # We also need to apply dropout during the backpropagation.
 
             # Calculate the derivative of the cost function w.r.t. the neuron inputs, dc_dz.
             #     da_dz = activation_function'(z),
