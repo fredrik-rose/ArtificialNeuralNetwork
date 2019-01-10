@@ -54,7 +54,7 @@ class DigitClassifier():
         return np.argmax(output)
 
     def train(self, images, labels, epochs, batch_size=20, learning_rate=0.1, regularization_factor=3.0, momentum=0.2,
-              droput=0):
+              droput=0, learning_rate_decay=lambda r, e: r if e % 20 else r / 2):
         """
         Trains the backend neural network to recognize handwritten digits.
         :param images: Training images containing handwritten digits.
@@ -70,7 +70,8 @@ class DigitClassifier():
         self._std_pixel = np.std(images)
         training_data = [(_convert_image(self._preprocess_image(x)), _convert_label(y))
                          for x, y in zip(images, labels)]
-        self._network.train(training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput)
+        self._network.train(training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput,
+                            learning_rate_decay)
 
     def _preprocess_image(self, image):
         """

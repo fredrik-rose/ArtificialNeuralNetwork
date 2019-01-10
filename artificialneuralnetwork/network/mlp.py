@@ -100,7 +100,8 @@ class NeuralNetwork():
             self._activations.append(x)
         return x
 
-    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput):
+    def train(self, training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput,
+              learning_rate_decay=lambda r, e: r):
         """
         Trains the network using stochastic gradient descent. The update rules look like follows
             b' = b - r*dc_db,
@@ -121,8 +122,10 @@ class NeuralNetwork():
         :param momentum: The amount of smoothing and acceleration [0,1].
         :param dropout: The probability that a neuron is removed from the network. A regularization
                         technique to reduce overfitting [0,1[.
+        :param learning_rate_decay: Callback for learning rate decay. Take as parameters the current learning rate r and
+                                    the current epoch e.
         """
-        for _ in range(epochs):
+        for e in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
                 batch = training_data[i:i + batch_size]
@@ -134,6 +137,7 @@ class NeuralNetwork():
                 self._velocities = (momentum * self._velocities) + (learning_rate * -weight_gradients)
                 self._biases += learning_rate * -bias_gradients
                 self._weights += self._velocities
+            learning_rate = learning_rate_decay(learning_rate, e + 1)
 
     def _gradient(self, training_data, droput):
         """
