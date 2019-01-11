@@ -34,48 +34,57 @@ def _load_object(file_path):
         return pickle.load(file)
 
 
-def _train(digit_classifier, evaluate=False, epochs=40):
+def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40):
     """
     Trains a digit classifier.
     :param digit_classifier: The classifier.
-    :param evaluate: Evaluates after each training epoch if true.
+    :param mnist_train_dataset: MNIST train dataset.
+    :param mnist_test_dataset: MNIST test dataset.
     :param epochs: Number of training epochs.
-    :return: Number of training images.
+    :return: List of train accuracies, list of test accuracies.
     """
-    mnist_train_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH)
-    if evaluate:
-        for epoch in range(epochs):
-            digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], 1)
-            correct, total = _evaluate(digit_classifier)
-            print("TP after epoch {0:}/{1}: {2:.2f}%".format(epoch + 1, epochs, (correct / total) * 100), flush=True)
-    else:
-        digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], epochs)
-    return len(mnist_train_dataset['images'])
+    def _evaluate_epoch(dataset):
+        """
+        Evaluates the accuracy of the current epoch.
+        :param dataset: Dataset to evaluate.
+        :return: Accuracy.
+        """
+        correct, total = _evaluate(digit_classifier, dataset)
+        return (correct / total) * 100
+
+    train_accuracies = []
+    test_accuracies = []
+    for epoch in range(epochs):
+        digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], 1)
+        train_accuracies.append(_evaluate_epoch(mnist_train_dataset))
+        test_accuracies.append(_evaluate_epoch(mnist_test_dataset))
+        print("Accuracy after epoch {0:}/{1}: {2:.2f}%".format(epoch + 1, epochs, test_accuracies[-1]), flush=True)
+    return train_accuracies, test_accuracies
 
 
-def _evaluate(digit_classifier):
+def _evaluate(digit_classifier, mnist_dataset):
     """
     Evaluates a digit classifier.
     :param digit_classifier: The classifier.
+    :param mnist_dataset: MNIST dataset.
     :return: Tuple containing number of correct classifications and total number of classifications.
     """
-    mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
-    total = len(mnist_test_dataset['images'])
+    total = len(mnist_dataset['images'])
     correct = sum(digit_classifier.classify(image) == label
-                  for image, label in zip(mnist_test_dataset['images'], mnist_test_dataset['labels']))
+                  for image, label in zip(mnist_dataset['images'], mnist_dataset['labels']))
     return correct, total
 
 
-def _split_correct_and_incorrect(digit_classifier, dataset):
+def _split_correct_and_incorrect(digit_classifier, mnist_dataset):
     """
     Splits the samples in a dataset to correctly classified and incorrectly classified.
     :param digit_classifier: The classifier.
-    :param dataset: Dataset containing images and labels.
+    :param mnist_dataset: MNIST dataset.
     :return: Tuple containing correct and incorrect classifications.
     """
     correct = {'images': [], 'labels': []}
     incorrect = {'images': [], 'labels': []}
-    for image, label in zip(dataset['images'], dataset['labels']):
+    for image, label in zip(mnist_dataset['images'], mnist_dataset['labels']):
         classification = digit_classifier.classify(image)
         if classification == label:
             correct['images'].append(image)
@@ -86,10 +95,27 @@ def _split_correct_and_incorrect(digit_classifier, dataset):
     return correct, incorrect
 
 
-def _visualize(digit_classifier):
+def _visualize_accuracies(train_accuracies, test_accuracies):
+    """
+    Visualizes the train and test accuracies.
+    :param train_accuracies: Train accuracies.
+    :param test_accuracies: Test accuracies.
+    """
+    plt.plot(train_accuracies, '-o', label="Train")
+    plt.plot(test_accuracies, '-o', label="Test")
+    plt.ylim([0, 100])
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.title("Accuracies")
+    plt.show()
+
+
+def _visualize_correct_incorrect(digit_classifier, mnist_dataset):
     """
     Visualizes some subsets of the training and test images.
     :param digit_classifier: The classifier.
+    :param mnist_dataset: MNIST dataset.
     """
     def _visualize_dataset_subset(dataset, title='', rows=4, cols=5):
         """
@@ -108,8 +134,7 @@ def _visualize(digit_classifier):
         plt.suptitle(title)
         plt.show()
 
-    mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
-    correct, incorrect = _split_correct_and_incorrect(digit_classifier, mnist_test_dataset)
+    correct, incorrect = _split_correct_and_incorrect(digit_classifier, mnist_dataset)
     _visualize_dataset_subset(incorrect, 'Subset of incorrectly classified images')
     _visualize_dataset_subset(correct, 'Subset of correctly classified images')
 
@@ -123,21 +148,25 @@ def main():
     parser.add_argument('-e', help='evaluate the classifier', dest='evaluate', action='store_true')
     parser.add_argument('-x', help='visualize images', dest='visualize', action='store_true')
     args = parser.parse_args()
+    mnist_train_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH)
+    mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
     if args.train:
         print("Training started...", flush=True)
         digit_classifier = dc.DigitClassifier(mnist.IMAGE_RESOLUTION)
-        total = _train(digit_classifier, args.evaluate)
+        train_accuracies, test_accuracies = _train(digit_classifier, mnist_train_dataset, mnist_test_dataset)
         _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH)
-        print("Training completed on {} images.".format(total), flush=True)
+        print("Training completed on {} images.".format(len(mnist_train_dataset['images'])), flush=True)
+        if args.visualize:
+            _visualize_accuracies(train_accuracies, test_accuracies)
     try:
         digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH)
     except FileNotFoundError:
         sys.exit("ERROR: Could not find a trained classifier. Run again with -t.")
     if args.evaluate:
-        correct, total = _evaluate(digit_classifier)
-        print("TP: {0:.2f}% [{1}/{2}]".format((correct / total) * 100, correct, total), flush=True)
+        correct, total = _evaluate(digit_classifier, mnist_test_dataset)
+        print("Accuracy: {0:.2f}% [{1}/{2}]".format((correct / total) * 100, correct, total), flush=True)
     if args.visualize:
-        _visualize(digit_classifier)
+        _visualize_correct_incorrect(digit_classifier, mnist_test_dataset)
 
 
 if __name__ == "__main__":
