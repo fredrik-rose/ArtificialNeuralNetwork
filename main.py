@@ -41,7 +41,7 @@ def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40)
     :param mnist_train_dataset: MNIST train dataset.
     :param mnist_test_dataset: MNIST test dataset.
     :param epochs: Number of training epochs.
-    :return: List of train accuracies, list of test accuracies.
+    :return: List of costs, list of train accuracies, list of test accuracies.
     """
     def _evaluate_epoch(dataset):
         """
@@ -52,14 +52,16 @@ def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40)
         correct, total = _evaluate(digit_classifier, dataset)
         return (correct / total) * 100
 
+    costs = []
     train_accuracies = []
     test_accuracies = []
     for epoch in range(epochs):
-        digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], 1)
+        # Remove the last element at each iteration since it will be equal to the first element of the next iteration.
+        costs = costs[:-1] + digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], 1)
         train_accuracies.append(_evaluate_epoch(mnist_train_dataset))
         test_accuracies.append(_evaluate_epoch(mnist_test_dataset))
         print("Accuracy after epoch {0:}/{1}: {2:.2f}%".format(epoch + 1, epochs, test_accuracies[-1]), flush=True)
-    return train_accuracies, test_accuracies
+    return costs, train_accuracies, test_accuracies
 
 
 def _evaluate(digit_classifier, mnist_dataset):
@@ -93,6 +95,18 @@ def _split_correct_and_incorrect(digit_classifier, mnist_dataset):
             incorrect['images'].append(image)
             incorrect['labels'].append(classification)
     return correct, incorrect
+
+
+def _visualize_costs(costs):
+    """
+    Visualizes the costs.
+    :param costs: Costs to visualize.
+    """
+    plt.plot(costs, '-o')
+    plt.xlabel("Epoch")
+    plt.ylabel("Cost")
+    plt.title("Costs")
+    plt.show()
 
 
 def _visualize_accuracies(train_accuracies, test_accuracies):
@@ -153,10 +167,11 @@ def main():
     if args.train:
         print("Training started...", flush=True)
         digit_classifier = dc.DigitClassifier(mnist.IMAGE_RESOLUTION)
-        train_accuracies, test_accuracies = _train(digit_classifier, mnist_train_dataset, mnist_test_dataset)
+        costs, train_accuracies, test_accuracies = _train(digit_classifier, mnist_train_dataset, mnist_test_dataset)
         _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH)
         print("Training completed on {} images.".format(len(mnist_train_dataset['images'])), flush=True)
         if args.visualize:
+            _visualize_costs(costs)
             _visualize_accuracies(train_accuracies, test_accuracies)
     try:
         digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH)
