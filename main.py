@@ -36,6 +36,16 @@ def _load_object(file_path):
         return pickle.load(file)
 
 
+def _load_mnist_dataset():
+    """
+    Loads the MNIST dataset.
+    :return: train, validation, test.
+    """
+    mnist_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH,
+                                     config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
+    return mnist_dataset['train'], mnist_dataset['validation'], mnist_dataset['test']
+
+
 def _augment_mnist_dataset(mnist_dataset):
     """
     Augments a MNIST dataset by rotating the images randomly.
@@ -50,14 +60,14 @@ def _augment_mnist_dataset(mnist_dataset):
                                         axis=0)
 
 
-def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40):
+def _train(digit_classifier, mnist_train_dataset, mnist_validation_dataset, epochs=40):
     """
     Trains a digit classifier.
     :param digit_classifier: The classifier.
     :param mnist_train_dataset: MNIST train dataset.
-    :param mnist_test_dataset: MNIST test dataset.
+    :param mnist_validation_dataset: MNIST validation dataset.
     :param epochs: Number of training epochs.
-    :return: List of costs, list of train accuracies, list of test accuracies.
+    :return: List of costs, list of train accuracies, list of validation accuracies.
     """
     def _evaluate_epoch(dataset):
         """
@@ -70,14 +80,15 @@ def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40)
 
     costs = []
     train_accuracies = []
-    test_accuracies = []
+    validation_accuracies = []
     for epoch in range(epochs):
         # Remove the last element at each iteration since it will be equal to the first element of the next iteration.
         costs = costs[:-1] + digit_classifier.train(mnist_train_dataset['images'], mnist_train_dataset['labels'], 1)
         train_accuracies.append(_evaluate_epoch(mnist_train_dataset))
-        test_accuracies.append(_evaluate_epoch(mnist_test_dataset))
-        print("Accuracy after epoch {0:}/{1}: {2:.2f}%".format(epoch + 1, epochs, test_accuracies[-1]), flush=True)
-    return costs, train_accuracies, test_accuracies
+        validation_accuracies.append(_evaluate_epoch(mnist_validation_dataset))
+        print("Accuracy after epoch {0:}/{1}: {2:.2f}%".format(epoch + 1, epochs, validation_accuracies[-1]),
+              flush=True)
+    return costs, train_accuracies, validation_accuracies
 
 
 def _evaluate(digit_classifier, mnist_dataset):
@@ -125,14 +136,14 @@ def _visualize_costs(costs):
     plt.show()
 
 
-def _visualize_accuracies(train_accuracies, test_accuracies):
+def _visualize_accuracies(train_accuracies, validation_accuracies):
     """
-    Visualizes the train and test accuracies.
+    Visualizes the train and validation accuracies.
     :param train_accuracies: Train accuracies.
-    :param test_accuracies: Test accuracies.
+    :param validation_accuracies: Validation accuracies.
     """
     plt.plot(train_accuracies, '-o', label="Train")
-    plt.plot(test_accuracies, '-o', label="Test")
+    plt.plot(validation_accuracies, '-o', label="Validation")
     plt.ylim([0, 100])
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
@@ -143,7 +154,7 @@ def _visualize_accuracies(train_accuracies, test_accuracies):
 
 def _visualize_correct_incorrect(digit_classifier, mnist_dataset):
     """
-    Visualizes some subsets of the training and test images.
+    Visualizes correctly classified and incorrectly classified subsets of MNIST images.
     :param digit_classifier: The classifier.
     :param mnist_dataset: MNIST dataset.
     """
@@ -179,22 +190,22 @@ def main():
     parser.add_argument('-e', help='evaluate the classifier', dest='evaluate', action='store_true')
     parser.add_argument('-x', help='visualize images', dest='visualize', action='store_true')
     args = parser.parse_args()
-    mnist_train_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH)
+    mnist_train_dataset, mnist_validation_dataset, mnist_test_dataset = _load_mnist_dataset()
     mnist_train_dataset['images'] = mnist_train_dataset['images'][::args.n]
     mnist_train_dataset['labels'] = mnist_train_dataset['labels'][::args.n]
-    mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
     if args.train:
         print("Extending data using data augmentation...", flush=True)
         _augment_mnist_dataset(mnist_train_dataset)
         print("Data augmentation completed.", flush=True)
         print("Training started...", flush=True)
         digit_classifier = dc.DigitClassifier(mnist.IMAGE_RESOLUTION)
-        costs, train_accuracies, test_accuracies = _train(digit_classifier, mnist_train_dataset, mnist_test_dataset)
+        costs, train_accuracies, validation_accuracies =\
+            _train(digit_classifier, mnist_train_dataset, mnist_validation_dataset)
         _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH)
         print("Training completed on {} images.".format(len(mnist_train_dataset['images'])), flush=True)
         if args.visualize:
             _visualize_costs(costs)
-            _visualize_accuracies(train_accuracies, test_accuracies)
+            _visualize_accuracies(train_accuracies, validation_accuracies)
     try:
         digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH)
     except FileNotFoundError:
