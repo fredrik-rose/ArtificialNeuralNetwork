@@ -7,8 +7,10 @@ import random as rnd
 import sys
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 import artificialneuralnetwork.application.digitclassifier as dc
+import artificialneuralnetwork.input.augmentation as aug
 import artificialneuralnetwork.input.mnist as mnist
 
 import config
@@ -32,6 +34,20 @@ def _load_object(file_path):
     """
     with open(file_path, 'rb') as file:
         return pickle.load(file)
+
+
+def _augment_mnist_dataset(mnist_dataset):
+    """
+    Augments a MNIST dataset by rotating the images randomly.
+    :param mnist_dataset: MNIST dataset to augment.
+    :return: MNIST dataset extended by a factor of two using augmentation.
+    """
+    mnist_dataset['images'] = np.append(mnist_dataset['images'],
+                                        aug.rotate_images(mnist_dataset['images'], 20),
+                                        axis=0)
+    mnist_dataset['labels'] = np.append(mnist_dataset['labels'],
+                                        mnist_dataset['labels'],
+                                        axis=0)
 
 
 def _train(digit_classifier, mnist_train_dataset, mnist_test_dataset, epochs=40):
@@ -165,6 +181,9 @@ def main():
     mnist_train_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH)
     mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
     if args.train:
+        print("Extending data using data augmentation...", flush=True)
+        _augment_mnist_dataset(mnist_train_dataset)
+        print("Data augmentation completed.", flush=True)
         print("Training started...", flush=True)
         digit_classifier = dc.DigitClassifier(mnist.IMAGE_RESOLUTION)
         costs, train_accuracies, test_accuracies = _train(digit_classifier, mnist_train_dataset, mnist_test_dataset)
