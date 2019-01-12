@@ -124,7 +124,9 @@ class NeuralNetwork():
                         technique to reduce overfitting [0,1[.
         :param learning_rate_decay: Callback for learning rate decay. Take as parameters the current learning rate r and
                                     the current epoch e.
+        :return: Cost (also known as loss) for each epoch, including the initial cost.
         """
+        costs = [self._cost(training_data, regularization_factor)]
         for e in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
@@ -137,7 +139,34 @@ class NeuralNetwork():
                 self._velocities = (momentum * self._velocities) + (learning_rate * -weight_gradients)
                 self._biases += learning_rate * -bias_gradients
                 self._weights += self._velocities
+            costs.append(self._cost(training_data, regularization_factor))
             learning_rate = learning_rate_decay(learning_rate, e + 1)
+        return costs
+
+    def _cost(self, data, regularization_factor):
+        """
+        Calculates the cost function on a given dataset.
+        :param data: List of data pairs (input, expected output), which must match the
+                     size of the input and output layers, respectively.
+        :param regularization_factor: The amount of regularization.
+        :return: Cost of the dataset.
+        """
+        cost = 0
+        # Add the data term of the cost.
+        cost += sum(self._cost_function(self.feedforward(x), y) for x, y in data) / len(data)
+        # Add the regularization term of the cost.
+        cost += (regularization_factor / len(data)) * sum(np.sum(w ** 2) / 2 for w in self._weights)
+        return cost
+
+    @staticmethod
+    def _cost_function(a, y):
+        """
+        Calculates the cost for a single training sample.
+        :param a: The output of the network.
+        :param y: The expected output.
+        :return: Cost for the training sample.
+        """
+        return -np.sum(np.nan_to_num(y * np.log(a) + (1 - y) * np.log(1 - a)))
 
     def _gradient(self, training_data, droput):
         """
@@ -238,14 +267,14 @@ class NeuralNetwork():
         return bias_gradients[::-1], weight_gradients[::-1]
 
     @staticmethod
-    def _cost_function_derivative(network_output, expected_output):
+    def _cost_function_derivative(a, y):
         """
-        Calculates the derivative of the cost function w.r.t. the neuron inputs of the last layer,
-        z, for a single training sample, c.
+        Calculates the derivative of the cost function, c,  w.r.t. the neuron inputs of the last
+        layer, z, for a single training sample.
             dc_dz = a - y (the derivation is too lengthy to include here).
-        :param network_output: The output of the network, a.
-        :param expected_output: The expected output, y.
+        :param a: The output of the network.
+        :param y: The expected output.
         :return: dc_dz.
         """
-        dc_dz = network_output - expected_output
+        dc_dz = a - y
         return dc_dz

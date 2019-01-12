@@ -65,13 +65,14 @@ class DigitClassifier():
         :param regularization_factor: See the train method in the NeuralNetwork class.
         :param momentum: See the train method in the NeuralNetwork class.
         :param droput: See the train method in the NeuralNetwork class.
+        :return: See the train method in the NeuralNetwork class.
         """
         self._mean_pixel = np.mean(images)
         self._std_pixel = np.std(images)
         training_data = [(_convert_image(self._preprocess_image(x)), _convert_label(y))
                          for x, y in zip(images, labels)]
-        self._network.train(training_data, epochs, batch_size, learning_rate, regularization_factor, momentum, droput,
-                            learning_rate_decay)
+        return self._network.train(training_data, epochs, batch_size, learning_rate, regularization_factor, momentum,
+                                   droput, learning_rate_decay)
 
     def _preprocess_image(self, image):
         """
