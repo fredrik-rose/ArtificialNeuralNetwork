@@ -54,3 +54,23 @@ network.
 
 The batch size decides the size of the random subset, the learning rate decides the step size, and the number of epochs
 decides the number of whole iterations through the training data.
+
+## Artificial Neural Network Techniques
+
+The application uses the following artificial neural network techniques:
+
+ * Split dataset into training, validation (used for hyper parameter tuning) and test
+ * Data augmentation
+ * Babysitting training: visualization of loss and accuracy
+ * Data preprocessing: zero center and normalization
+ * Improved weight initialization
+ * Weight regularization
+ * Dropout regularization
+ * Momentum
+ * Learning rate decay
+
+Other techniques to consider, currently not implemented:
+
+ * Batch normalization
+ * Adam optimizer
+ * ReLU activation functions
