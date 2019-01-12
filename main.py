@@ -175,10 +175,13 @@ def main():
     """
     parser = argparse.ArgumentParser(description='Handwritten-digit classifier.')
     parser.add_argument('-t', help='train the classifier', dest='train', action='store_true')
+    parser.add_argument('-n', help='use only every N:th training sample', type=int, default=1)
     parser.add_argument('-e', help='evaluate the classifier', dest='evaluate', action='store_true')
     parser.add_argument('-x', help='visualize images', dest='visualize', action='store_true')
     args = parser.parse_args()
     mnist_train_dataset = mnist.load_mnist(config.MNIST_TRAIN_IMAGES_PATH, config.MNIST_TRAIN_LABELS_PATH)
+    mnist_train_dataset['images'] = mnist_train_dataset['images'][::args.n]
+    mnist_train_dataset['labels'] = mnist_train_dataset['labels'][::args.n]
     mnist_test_dataset = mnist.load_mnist(config.MNIST_TEST_IMAGES_PATH, config.MNIST_TEST_LABELS_PATH)
     if args.train:
         print("Extending data using data augmentation...", flush=True)
