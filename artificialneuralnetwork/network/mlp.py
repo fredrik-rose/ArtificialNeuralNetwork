@@ -126,14 +126,13 @@ class NeuralNetwork():
                                     the current epoch e.
         :return: Cost (also known as loss) for each epoch, including the initial cost.
         """
+        regularization_factor /= len(training_data)
         costs = [self._cost(training_data, regularization_factor)]
         for e in range(epochs):
             rnd.shuffle(training_data)
             for i in range(0, len(training_data), batch_size):
                 batch = training_data[i:i + batch_size]
-                bias_gradients, weight_gradients = self._gradient(batch, droput)
-                # Add the derivative of the regularization term w.r.t the weight.
-                weight_gradients += (regularization_factor / len(training_data)) * self._weights
+                bias_gradients, weight_gradients = self._gradient(batch, regularization_factor, droput)
                 # The momentum acts as a smoother (it is essentially an exponential moving average filter) and an
                 # accelerator since it helps keeping the "course" in "ravines".
                 self._velocities = (momentum * self._velocities) + (learning_rate * -weight_gradients)
@@ -143,19 +142,20 @@ class NeuralNetwork():
             learning_rate = learning_rate_decay(learning_rate, e + 1)
         return costs
 
-    def _cost(self, data, regularization_factor):
+    def _cost(self, data, regularization_factor, dropout=0):
         """
         Calculates the cost function on a given dataset.
         :param data: List of data pairs (input, expected output), which must match the
                      size of the input and output layers, respectively.
-        :param regularization_factor: The amount of regularization.
+        :param regularization_factor: The amount of regularization, scaled by the data length.
+        :param dropout: Only to be used by unit tests.
         :return: Cost of the dataset.
         """
         cost = 0
         # Add the data term of the cost.
-        cost += sum(self._cost_function(self.feedforward(x), y) for x, y in data) / len(data)
+        cost += sum(self._cost_function(self.feedforward(x, dropout), y) for x, y in data) / len(data)
         # Add the regularization term of the cost.
-        cost += (regularization_factor / len(data)) * sum(np.sum(w ** 2) / 2 for w in self._weights)
+        cost += regularization_factor * sum(np.sum(w ** 2) / 2 for w in self._weights)
         return cost
 
     @staticmethod
@@ -168,13 +168,14 @@ class NeuralNetwork():
         """
         return -np.sum(np.nan_to_num(y * np.log(a) + (1 - y) * np.log(1 - a)))
 
-    def _gradient(self, training_data, droput):
+    def _gradient(self, training_data, regularization_factor, droput):
         """
         Calculates the gradient of the cost function for all training samples.
         Use the fact that the derivative of a sum is equal to the sum of the derivatives of each
         term, when taking the derivative of the cost function.
         :param training_data: List of training pairs (input, expected output), which must match the
                               size of the input and output layers, respectively.
+        :param regularization_factor: The amount of regularization, scaled by the data length.
         :param dropout: The probability that a neuron is removed from the network.
         :return: Tuple containing bias gradients and weight gradients.
         """
@@ -187,6 +188,8 @@ class NeuralNetwork():
             weight_gradients += np.asarray(sample_weight_gradients)
         bias_gradients /= len(training_data)
         weight_gradients /= len(training_data)
+        # Add the derivative of the regularization term w.r.t the weight.
+        weight_gradients += regularization_factor * self._weights
         return bias_gradients, weight_gradients
 
     def _backpropagation(self, x, y, droput):
