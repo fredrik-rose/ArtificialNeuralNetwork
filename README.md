@@ -23,6 +23,21 @@ Start by running the application using the '-t' argument to train a classifier, 
 evaluation after each training epoch. Once the classifier is trained run with '-e' to evaluate on the test dataset or
 '-x' to visualize subsets of correctly and incorrectly classified images.
 
+## Test
+
+Stand in the root of the project.
+```
+$ python -m pytest
+============================= test session starts =============================
+platform win32 -- Python 3.5.3, pytest-3.0.7, py-1.4.33, pluggy-0.4.0
+rootdir: D:\PycharmProjects\ArtificialNeuralNetwork, inifile:
+collected 4 items
+
+artificialneuralnetwork\network\tests\mlp_test.py ....
+
+========================== 4 passed in 0.85 seconds ===========================
+```
+
 ## Dependencies
 
 * matplotlib
@@ -58,7 +73,6 @@ decides the number of whole iterations through the training data.
 ## Artificial Neural Network Techniques
 
 The application uses the following artificial neural network techniques:
-
  * Split dataset into training, validation (used for hyper parameter tuning) and test
  * Data augmentation
  * Babysitting training: visualization of loss and accuracy
@@ -70,7 +84,6 @@ The application uses the following artificial neural network techniques:
  * Learning rate decay
 
 Other techniques to consider, currently not implemented:
-
  * Batch normalization
  * Adam optimizer
  * ReLU activation functions
