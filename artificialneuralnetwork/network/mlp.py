@@ -5,24 +5,7 @@ import random as rnd
 
 import numpy as np
 
-
-def _sigmoid(z):
-    """
-    The sigmoid function.
-    Could e.g. be used as an activation function in an artificial neural network.
-    :param z: The input.
-    :return: Sigmoid(z).
-    """
-    return 1 / (1 + np.exp(-z))
-
-
-def _sigmoid_derivative(z):
-    """
-    The derivative of the sigmoid function.
-    :param z: The input.
-    :return: Sigmoid'(z).
-    """
-    return np.exp(-z) / ((1 + np.exp(-z)) ** 2)
+import artificialneuralnetwork.network.common as cm
 
 
 class NeuralNetwork():
@@ -66,13 +49,13 @@ class NeuralNetwork():
                             hidden and output layers. Example with 2 hidden layer: (3,4,3,1).
         """
         self._number_of_layers = len(layer_sizes)
-        self._biases = _asarray([np.random.randn(size, 1) for size in layer_sizes[1:]])
-        self._weights = _asarray([np.random.randn(size, input_size) / np.sqrt(input_size)
-                                  for input_size, size in zip(layer_sizes[:-1], layer_sizes[1:])])
-        self._bias_velocities = _asarray([np.zeros(b.shape) for b in self._biases])
-        self._weight_velocities = _asarray([np.zeros(w.shape) for w in self._weights])
-        self._activation_function = _sigmoid
-        self._activation_function_derivative = _sigmoid_derivative
+        self._biases = cm.asarray([np.random.randn(size, 1) for size in layer_sizes[1:]])
+        self._weights = cm.asarray([np.random.randn(size, input_size) / np.sqrt(input_size)
+                                    for input_size, size in zip(layer_sizes[:-1], layer_sizes[1:])])
+        self._bias_velocities = cm.asarray([np.zeros(b.shape) for b in self._biases])
+        self._weight_velocities = cm.asarray([np.zeros(w.shape) for w in self._weights])
+        self._activation_function = cm.sigmoid
+        self._activation_function_derivative = cm.sigmoid_derivative
         self._activations = []
         self._neuron_inputs = []
         self._dropout_masks = []
@@ -181,12 +164,12 @@ class NeuralNetwork():
         :return: Tuple containing bias gradients and weight gradients.
         """
         # TODO: It is possible to change the backpropagation function slightly, to handle multiple training samples.
-        bias_gradients = _asarray([np.zeros(b.shape) for b in self._biases])
-        weight_gradients = _asarray([np.zeros(w.shape) for w in self._weights])
+        bias_gradients = cm.asarray([np.zeros(b.shape) for b in self._biases])
+        weight_gradients = cm.asarray([np.zeros(w.shape) for w in self._weights])
         for x, y in training_data:
             sample_bias_gradients, sample_weight_gradients = self._backpropagation(x, y, droput)
-            bias_gradients += _asarray(sample_bias_gradients)
-            weight_gradients += _asarray(sample_weight_gradients)
+            bias_gradients += cm.asarray(sample_bias_gradients)
+            weight_gradients += cm.asarray(sample_weight_gradients)
         bias_gradients /= len(training_data)
         weight_gradients /= len(training_data)
         # Add the derivative of the regularization term w.r.t the weight.
@@ -282,16 +265,3 @@ class NeuralNetwork():
         """
         dc_dz = a - y
         return dc_dz
-
-
-def _asarray(array):
-    """
-    Converts the input to a numpy array.
-    Does not try to merge dimensions as numpy's asarray function does.
-    :param array: Input data.
-    :return: Numpy array.
-    """
-    numpy_array = np.empty(len(array), dtype=object)
-    for i, element in enumerate(array):
-        numpy_array[i] = element
-    return numpy_array
