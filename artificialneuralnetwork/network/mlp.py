@@ -69,7 +69,8 @@ class NeuralNetwork():
         self._biases = _asarray([np.random.randn(size, 1) for size in layer_sizes[1:]])
         self._weights = _asarray([np.random.randn(size, input_size) / np.sqrt(input_size)
                                   for input_size, size in zip(layer_sizes[:-1], layer_sizes[1:])])
-        self._velocities = _asarray([np.zeros(w.shape) for w in self._weights])
+        self._bias_velocities = _asarray([np.zeros(b.shape) for b in self._biases])
+        self._weight_velocities = _asarray([np.zeros(w.shape) for w in self._weights])
         self._activation_function = _sigmoid
         self._activation_function_derivative = _sigmoid_derivative
         self._activations = []
@@ -134,9 +135,10 @@ class NeuralNetwork():
                 bias_gradients, weight_gradients = self._gradient(batch, regularization_factor, droput)
                 # The momentum acts as a smoother (it is essentially an exponential moving average filter) and an
                 # accelerator since it helps keeping the "course" in "ravines".
-                self._velocities = (momentum * self._velocities) + (learning_rate * -weight_gradients)
-                self._biases += learning_rate * -bias_gradients
-                self._weights += self._velocities
+                self._bias_velocities = (momentum * self._bias_velocities) + (learning_rate * -bias_gradients)
+                self._weight_velocities = (momentum * self._weight_velocities) + (learning_rate * -weight_gradients)
+                self._biases += self._bias_velocities
+                self._weights += self._weight_velocities
             costs.append(self._cost(training_data, regularization_factor))
             learning_rate = learning_rate_decay(learning_rate, e + 1)
         return costs
