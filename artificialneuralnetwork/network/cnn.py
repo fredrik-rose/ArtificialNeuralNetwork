@@ -3,6 +3,8 @@ Convolutional neural network (CNN).
 """
 import abc
 
+import numpy as np
+
 
 class Layer(abc.ABC):
     """
@@ -53,3 +55,44 @@ class Layer(abc.ABC):
                              a weight gradient in the backpropagate method this list must be pop:ed.
         """
         pass
+
+
+class FullyConnected(Layer):
+    """
+    A fully connected layer.
+    """
+
+    def __init__(self, input_size, output_size):
+        """
+        Creates a fully connected layer. The parameters are initialize for good performance on the
+        ReLU activation function. Should work good also for Sigmoid (the optimal would have been to
+        remove the 2 in the weight initialization, and probably use a normal distribution for the
+        biases).
+        :param input_size: Number of inputs to the layer.
+        :param output_size: Number of outputs of the layer.
+        """
+        self._biases = np.zeros((output_size, 1))
+        self._weights = np.random.randn(output_size, input_size) * np.sqrt(2 / input_size)
+        self._input = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class.
+        """
+        self._input = x
+        return np.dot(self._weights, x) + self._biases
+
+    def backpropagate(self, dc, db, dw):
+        """
+        See the Layer class.
+        """
+        db.append(dc)
+        dw.append(np.dot(dc, self._input.transpose()))
+        return np.dot(self._weights.transpose(), dc)
+
+    def adjust(self, bias_delta, weight_delta):
+        """
+        See the Layer class.
+        """
+        self._biases += bias_delta.pop()
+        self._weights += weight_delta.pop()
