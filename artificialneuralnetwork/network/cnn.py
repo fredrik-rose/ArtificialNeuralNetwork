@@ -144,3 +144,29 @@ class Sigmoid(Layer):
         See the Layer class.
         """
         return np.multiply(cm.sigmoid_derivative(self._input), dc)
+
+
+class ReLU(Layer):
+    """
+    A rectified linear unit (ReLU) layer.
+    """
+
+    def __init__(self):
+        """
+        Creates a ReLU layer.
+        """
+        self._input = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class.
+        """
+        self._input = x
+        return cm.relu(x)
+
+    @Layer.non_parameter
+    def backpropagate(self, dc):
+        """
+        See the Layer class.
+        """
+        return np.multiply(cm.relu_derivative(self._input), dc)
