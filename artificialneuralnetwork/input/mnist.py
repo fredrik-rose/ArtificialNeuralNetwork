@@ -9,7 +9,8 @@ import numpy as np
 import artificialneuralnetwork.input.idxparser as idx
 
 
-IMAGE_RESOLUTION = 28 * 28
+IMAGE_WIDTH = 28
+IMAGE_HEIGHT = 28
 _NUMBER_OF_VALIDATIONS = 10000
 
 

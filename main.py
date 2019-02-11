@@ -200,7 +200,7 @@ def main():
             _augment_mnist_dataset(mnist_train_dataset)
             print("Data augmentation completed.", flush=True)
         print("Training started...", flush=True)
-        digit_classifier = dc.DigitClassifier(mnist.IMAGE_RESOLUTION)
+        digit_classifier = dc.create_digit_classifier_with_mlp(mnist.IMAGE_WIDTH, mnist.IMAGE_HEIGHT)
         costs, train_accuracies, validation_accuracies =\
             _train(digit_classifier, mnist_train_dataset, mnist_validation_dataset)
         _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH)
