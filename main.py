@@ -60,6 +60,18 @@ def _augment_mnist_dataset(mnist_dataset):
                                         axis=0)
 
 
+def _create_digit_classifier(name):
+    """
+    Creates a digit classifier.
+    :param name: The type of the backbone network.
+    :return: Digit classifier.
+    """
+    classifiers = {'mlp': dc.create_digit_classifier_with_mlp,
+                   'cnn': dc.create_digit_classifier_with_cnn}
+    classifier = classifiers[name](mnist.IMAGE_WIDTH, mnist.IMAGE_HEIGHT)
+    return classifier
+
+
 def _train(digit_classifier, mnist_train_dataset, mnist_validation_dataset, epochs=40):
     """
     Trains a digit classifier.
@@ -184,7 +196,9 @@ def main():
     """
     Main Function.
     """
-    parser = argparse.ArgumentParser(description='Handwritten-digit classifier.')
+    parser = argparse.ArgumentParser(description='Handwritten-digit classifier.',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-c', help='classifier backbone', dest='classifier', default='mlp', choices=['mlp', 'cnn'])
     parser.add_argument('-t', help='train the classifier', dest='train', action='store_true')
     parser.add_argument('-a', help='use data augmentation', dest='augment', action='store_true')
     parser.add_argument('-n', help='use only every N:th training sample', type=int, default=1)
@@ -200,16 +214,16 @@ def main():
             _augment_mnist_dataset(mnist_train_dataset)
             print("Data augmentation completed.", flush=True)
         print("Training started...", flush=True)
-        digit_classifier = dc.create_digit_classifier_with_mlp(mnist.IMAGE_WIDTH, mnist.IMAGE_HEIGHT)
+        digit_classifier = _create_digit_classifier(args.classifier)
         costs, train_accuracies, validation_accuracies =\
             _train(digit_classifier, mnist_train_dataset, mnist_validation_dataset)
-        _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH)
+        _save_object(digit_classifier, config.SAVED_DIGIT_CLASSIFIER_PATH.format(args.classifier))
         print("Training completed on {} images.".format(len(mnist_train_dataset['images'])), flush=True)
         if args.visualize:
             _visualize_costs(costs)
             _visualize_accuracies(train_accuracies, validation_accuracies)
     try:
-        digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH)
+        digit_classifier = _load_object(config.SAVED_DIGIT_CLASSIFIER_PATH.format(args.classifier))
     except FileNotFoundError:
         sys.exit("ERROR: Could not find a trained classifier. Run again with -t.")
     if args.evaluate:
