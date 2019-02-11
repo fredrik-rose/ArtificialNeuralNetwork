@@ -4,6 +4,7 @@ MLP network unit tests.
 import numpy as np
 
 import artificialneuralnetwork.network.mlp as mlp
+import artificialneuralnetwork.network.tests.utilities as util
 
 
 def test_gradient():
@@ -60,10 +61,9 @@ def _verify_gradients(seed, layer_sizes, number_of_training_samples, regularizat
     :param dropout: Dropout probability.
     :param granularity: Granularity then comparing the analytical gradient with the numerical gradient.
     """
-    np.random.seed(seed)
     regularization /= number_of_training_samples
-    data = [(np.random.uniform(-1, 1, (layer_sizes[0], 1)), np.random.uniform(0.001, 0.999, (layer_sizes[-1], 1)))
-            for _ in range(number_of_training_samples)]
+    data = util.generate_training_data((layer_sizes[0], 1), (layer_sizes[-1], 1), number_of_training_samples, seed)
+    np.random.seed(seed)
     network = mlp.NeuralNetwork(layer_sizes)
     np.random.seed(seed)
     bias_gradients, weight_gradients = network._gradient(data, regularization, dropout)
