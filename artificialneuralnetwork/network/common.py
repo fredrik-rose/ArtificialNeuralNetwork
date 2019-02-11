@@ -42,6 +42,16 @@ def relu_derivative(z):
     return 1 * (z > 0)
 
 
+def softmax(z):
+    """
+    The softmax function.
+    :param z: The input.
+    :return: Softmax(z).
+    """
+    exponents = np.exp(z - np.max(z))  # The purpose of the subtraction is the make it numerically stable.
+    return exponents / np.sum(exponents)
+
+
 def asarray(array):
     """
     Converts the input to a numpy array.
