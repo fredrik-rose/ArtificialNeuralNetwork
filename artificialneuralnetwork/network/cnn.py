@@ -339,3 +339,37 @@ class Flatten(Layer):
         See the Layer class.
         """
         return np.reshape(dc, self._shape)
+
+
+class Cost(abc.ABC):
+    """
+    The interface of a generic neural network cost (also known as loss) function.
+    """
+
+    def feedforward(self, x):
+        """
+        The last layer of the neural network.
+        :param x: Input, shape shall match the shape of the output of the network.
+        :return: Output of the last layer of the network. Note that this is not the cost.
+        """
+        pass
+
+    @abc.abstractmethod
+    def cost(self, a, y):
+        """
+        The cost function.
+        :param a: Neural network output, shape shall match the y parameter.
+        :param y: Expected output, shape shall match the a parameter.
+        :return: The cost (also known as loss).
+        """
+        pass
+
+    @abc.abstractmethod
+    def cost_derivative(self, a, y):
+        """
+        The derivative of the cost function, including the feedforward part.
+        :param a: Neural network output, shape shall match the y parameter.
+        :param y: Expected output, shape shall match the a parameter.
+        :return: The derivative of the cost function.
+        """
+        pass
