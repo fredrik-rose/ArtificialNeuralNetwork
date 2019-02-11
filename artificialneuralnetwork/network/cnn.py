@@ -3,6 +3,7 @@ Convolutional neural network (CNN).
 """
 import abc
 
+from scipy import ndimage
 from scipy import signal
 import numpy as np
 
@@ -261,3 +262,51 @@ def _remove_dimension(arr):
     :return: Array with removed first dimension.
     """
     return np.reshape(arr, arr.shape[1:])
+
+
+class MaxPool(Layer):
+    """
+    A max pool layer, often used after a convolutional layer to reduce the size.
+    """
+
+    def __init__(self, kernel_size):
+        """
+        Creates a max pool layer.
+        :param kernel_size: The kernel (also known as filter) size of the layer.
+        """
+        self._kernel_size = kernel_size
+        self._max_indexes_mask = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class.
+        """
+        output = ndimage.filters.maximum_filter(x, size=(1, self._kernel_size, self._kernel_size),
+                                                mode='constant', cval=0.0, origin=-(self._kernel_size-1))
+        downsampled_output = self._downsample(output)
+        self._max_indexes_mask = 1 * (x == self._upsample(downsampled_output))
+        return downsampled_output
+
+    @Layer.non_parameter
+    def backpropagate(self, dc):
+        """
+        See the Layer class.
+        """
+        upsampled_dc = self._upsample(dc)
+        return np.multiply(upsampled_dc, self._max_indexes_mask)
+
+    def _downsample(self, arr):
+        """
+        Downsamples an array according to the filter size of the layer.
+        :param arr: Array to downsample.
+        :return: Downsampled array.
+        """
+        return arr[:, ::self._kernel_size, ::self._kernel_size]
+
+    def _upsample(self, arr):
+        """
+        Upsamples an array according to the filter size of the layer.
+        :param arr: Array to upsample.
+        :return: Upsampled array.
+        """
+        return arr.repeat(self._kernel_size, axis=1).repeat(self._kernel_size, axis=2)
