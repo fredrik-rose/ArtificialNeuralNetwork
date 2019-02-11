@@ -293,7 +293,7 @@ class Convolutional(Layer):
         https://fdsmlhn.github.io/2017/11/02/Understanding%20im2col%20implementation%20in%20Python(numpy%20fancy%20indexing)/
         """
         self._input = x
-        output = [_remove_dimension(signal.convolve(x, filter, mode='valid')) + bias
+        output = [remove_dimension(signal.convolve(x, filter, mode='valid')) + bias
                   for filter, bias in zip(self._weights, self._biases)]
         output = np.stack(output, axis=0)
         return output
@@ -316,7 +316,7 @@ class Convolutional(Layer):
             Calculates the derivative of the weight w.r.t. the cost function for this layer.
             :return: The derivative.
             """
-            local_dw = [signal.correlate(_add_dimension(c), self._input, mode='valid') for c in dc]
+            local_dw = [signal.correlate(add_dimension(c), self._input, mode='valid') for c in dc]
             local_dw = np.stack(local_dw, axis=0)
             return local_dw
 
@@ -325,7 +325,7 @@ class Convolutional(Layer):
             Calculates the derivative of the cost function w.r.t. the input of this layer.
             :return: The derivative.
             """
-            local_dc = [signal.correlate(_add_dimension(c), w, mode='full') for c, w in zip(dc, self._weights)]
+            local_dc = [signal.correlate(add_dimension(c), w, mode='full') for c, w in zip(dc, self._weights)]
             local_dc = np.sum(local_dc, axis=0)
             return local_dc
 
@@ -341,7 +341,7 @@ class Convolutional(Layer):
         self._weights += weight_delta.pop()
 
 
-def _add_dimension(arr):
+def add_dimension(arr):
     """
     Add a dimension to an array.
     :param arr: Array.
@@ -350,7 +350,7 @@ def _add_dimension(arr):
     return np.reshape(arr, (1, *arr.shape))
 
 
-def _remove_dimension(arr):
+def remove_dimension(arr):
     """
     Removes the first dimension of an array.
     :param arr: Array with first dimension equal to 1.

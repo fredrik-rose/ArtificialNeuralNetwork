@@ -3,6 +3,7 @@ Digit classifier.
 """
 import numpy as np
 
+import artificialneuralnetwork.network.cnn as cnn
 import artificialneuralnetwork.network.mlp as mlp
 
 
@@ -52,6 +53,26 @@ def create_digit_classifier_with_mlp(image_width, image_height, hidden_layers=(1
                        'learning_rate_decay': learning_rate_decay}
     network = mlp.NeuralNetwork((image_width * image_height,) + hidden_layers + (10,))
     classifier = DigitClassifier(_convert_image, _convert_label, network, training_params)
+    return classifier
+
+
+def create_digit_classifier_with_cnn(image_width, image_height):
+    """
+    Creates a digit classifier with a convolutional neural network (cnn) as backbone classifier.
+    :param image_width: Width of the images to be classified.
+    :param image_height: Height of the images to be classified.
+    :return: Digit classifier.
+    """
+    layers = [cnn.Convolutional(3, 1, 4),
+              cnn.ReLU(),
+              cnn.MaxPool(2),
+              cnn.Flatten(),
+              cnn.FullyConnected(((image_width - 2) // 2) * ((image_height - 2) // 2) * 4, 30),
+              cnn.ReLU(),
+              cnn.FullyConnected(30, 10)]
+    cost = cnn.MultiClassCrossEntropy()
+    network = cnn.NeuralNetworkModel(layers, cost)
+    classifier = DigitClassifier(cnn.add_dimension, _convert_label, network)
     return classifier
 
 
