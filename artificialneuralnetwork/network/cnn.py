@@ -398,3 +398,28 @@ class SingleClassCrossEntropy(Cost):
         See the Cost class.
         """
         return a - y
+
+
+class MultiClassCrossEntropy(Cost):
+    """
+    A multi-class cross-entropy (also known as the negative log likelihood for
+    the multinomial distribution) cost function.
+    """
+
+    def feedforward(self, x):
+        """
+        See the Cost class.
+        """
+        return cm.softmax(x)
+
+    def cost(self, a, y):
+        """
+        See the Cost class. Note that it could be optimized if y is one-hot encoded.
+        """
+        return -np.sum(np.nan_to_num(y * np.log(a)))
+
+    def cost_derivative(self, a, y):
+        """
+        See the Cost class. Note that it could be optimized if y is one-hot encoded.
+        """
+        return a * np.sum(y) - y
