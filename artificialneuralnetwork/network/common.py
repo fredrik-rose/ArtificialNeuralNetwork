@@ -63,3 +63,12 @@ def asarray(array):
     for i, element in enumerate(array):
         numpy_array[i] = element
     return numpy_array
+
+
+def aslist(array):
+    """
+    Converts the first dimension of a numpy array to a list.
+    :param array: Input data.
+    :return: List of numpy arrays.
+    """
+    return [e for e in array]
