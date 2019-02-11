@@ -310,3 +310,32 @@ class MaxPool(Layer):
         :return: Upsampled array.
         """
         return arr.repeat(self._kernel_size, axis=1).repeat(self._kernel_size, axis=2)
+
+
+class Flatten(Layer):
+    """
+    A layer that flattens its input. Typically used between a convolutional layer and a fully
+    connected layer.
+    """
+
+    def __init__(self):
+        """
+        Creates a flatten layer.
+        """
+        self._shape = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class.
+        """
+        self._shape = x.shape
+        output = np.ndarray.flatten(x)
+        output.shape = (len(output), 1)
+        return output
+
+    @Layer.non_parameter
+    def backpropagate(self, dc):
+        """
+        See the Layer class.
+        """
+        return np.reshape(dc, self._shape)
