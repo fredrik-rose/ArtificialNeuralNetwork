@@ -56,6 +56,26 @@ class Layer(abc.ABC):
         """
         pass
 
+    def non_parameter(backpropagation_method):
+        """
+        Decorator to use with the backpropagate method, if the layer does not have learnable parameters.
+        :param backpropagation_method: The backpropagation method.
+        :return: Non-parametric backpropagation method.
+        """
+
+        def wrapper(self, dc, db, dw):
+            """
+            Non-parametric backpropagation method.
+            :param dc: See the backpropagate method.
+            :param db: Not used.
+            :param dw: Not used.
+            :return: See the backpropagate method.
+            """
+            del db, dw
+            return backpropagation_method(self, dc)
+
+        return wrapper
+
 
 class FullyConnected(Layer):
     """
