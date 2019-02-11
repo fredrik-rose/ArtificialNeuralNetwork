@@ -5,6 +5,8 @@ import abc
 
 import numpy as np
 
+import artificialneuralnetwork.network.common as cm
+
 
 class Layer(abc.ABC):
     """
@@ -116,3 +118,29 @@ class FullyConnected(Layer):
         """
         self._biases += bias_delta.pop()
         self._weights += weight_delta.pop()
+
+
+class Sigmoid(Layer):
+    """
+    A sigmoid layer.
+    """
+
+    def __init__(self):
+        """
+        Creates a sigmoid layer.
+        """
+        self._input = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class.
+        """
+        self._input = x
+        return cm.sigmoid(x)
+
+    @Layer.non_parameter
+    def backpropagate(self, dc):
+        """
+        See the Layer class.
+        """
+        return np.multiply(cm.sigmoid_derivative(self._input), dc)
