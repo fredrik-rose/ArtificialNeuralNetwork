@@ -3,6 +3,7 @@ Convolutional neural network (CNN).
 """
 import abc
 
+from scipy import signal
 import numpy as np
 
 import artificialneuralnetwork.network.common as cm
@@ -170,3 +171,93 @@ class ReLU(Layer):
         See the Layer class.
         """
         return np.multiply(cm.relu_derivative(self._input), dc)
+
+
+class Convolutional(Layer):
+    """
+    A convolutional layer. Note that the input is not zero padded, i.e. the borders will be cut, the
+    kernel size decides how much.
+    """
+
+    def __init__(self, kernel_size, input_depth, filters):
+        """
+        Creates a convolutional layer.
+        :param kernel_size: The kernel (also known as filter) size of the layer.
+        :param input_depth: The depth of the input to the layer.
+        :param filters: Number of filters, i.e. the depth of the output.
+        """
+        self._weights = np.random.randn(filters, input_depth, kernel_size, kernel_size)
+        self._biases = np.random.randn(filters, 1)
+        self._input = None
+
+    def feedforward(self, x):
+        """
+        See the Layer class. Could be implemented efficiently as a matrix multiplication using
+        ol2img, see the cs231 course notes or
+        https://fdsmlhn.github.io/2017/11/02/Understanding%20im2col%20implementation%20in%20Python(numpy%20fancy%20indexing)/
+        """
+        self._input = x
+        output = [_remove_dimension(signal.convolve(x, filter, mode='valid')) + bias
+                  for filter, bias in zip(self._weights, self._biases)]
+        output = np.stack(output, axis=0)
+        return output
+
+    def backpropagate(self, dc, db, dw):
+        """
+        See the Layer class.
+        """
+        def calculate_local_db():
+            """
+            Calculates the derivative of the bias w.r.t. the cost function for this layer.
+            :return: The derivative.
+            """
+            local_db = [np.sum(c) for c in dc]
+            local_db = np.reshape(local_db, (len(local_db), 1))
+            return local_db
+
+        def calculate_local_dw():
+            """
+            Calculates the derivative of the weight w.r.t. the cost function for this layer.
+            :return: The derivative.
+            """
+            local_dw = [signal.correlate(_add_dimension(c), self._input, mode='valid') for c in dc]
+            local_dw = np.stack(local_dw, axis=0)
+            return local_dw
+
+        def calculate_local_dc():
+            """
+            Calculates the derivative of the cost function w.r.t. the input of this layer.
+            :return: The derivative.
+            """
+            local_dc = [signal.correlate(_add_dimension(c), w, mode='full') for c, w in zip(dc, self._weights)]
+            local_dc = np.sum(local_dc, axis=0)
+            return local_dc
+
+        db.append(calculate_local_db())
+        dw.append(calculate_local_dw())
+        return calculate_local_dc()
+
+    def adjust(self, bias_delta, weight_delta):
+        """
+        See the Layer class.
+        """
+        self._biases += bias_delta.pop()
+        self._weights += weight_delta.pop()
+
+
+def _add_dimension(arr):
+    """
+    Add a dimension to an array.
+    :param arr: Array.
+    :return: Array with an extra first dimension.
+    """
+    return np.reshape(arr, (1, *arr.shape))
+
+
+def _remove_dimension(arr):
+    """
+    Removes the first dimension of an array.
+    :param arr: Array with first dimension equal to 1.
+    :return: Array with removed first dimension.
+    """
+    return np.reshape(arr, arr.shape[1:])
