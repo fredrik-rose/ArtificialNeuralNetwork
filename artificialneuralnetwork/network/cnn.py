@@ -2,12 +2,107 @@
 Convolutional neural network (CNN).
 """
 import abc
+import random as rnd
 
 from scipy import ndimage
 from scipy import signal
 import numpy as np
 
 import artificialneuralnetwork.network.common as cm
+
+
+class NeuralNetworkModel():
+    """
+    Generic neural network model.
+    """
+
+    def __init__(self, layers, cost):
+        """
+        Creates a neural network model.
+        :param layers: Layers of the network.
+        :param cost: Cost (also known as loss) function.
+        """
+        self._layers = layers
+        self._cost_function = cost
+
+    def feedforward(self, x):
+        """
+        Runs the neural network model on a given input.
+        :param x: Input, shape shall match the input layer.
+        :return: Network output, shape is determined by the output layer.
+        """
+        for layer in self._layers:
+            x = layer.feedforward(x)
+        x = self._cost_function.feedforward(x)
+        return x
+
+    def train(self, training_data, epochs, batch_size, learning_rate):
+        """
+        Trains the network using stochastic gradient descent. Does not implement fancy training features
+        like regularization, momentum, dropout or learning rate decay.
+        :param training_data: List of training pairs (input, expected output), which must match the
+                              size of the input and output layers, respectively.
+        :param epochs: Number of training epochs, i.e. number of passes over all the training samples.
+        :param batch_size: Number of training samples in a batch, used to estimate the gradient for
+                           a single gradient descent step.
+        :param learning_rate: The gradient descent step size.
+        :return: Cost (also known as loss) for each epoch, including the initial cost.
+        """
+        costs = [self._cost(training_data)]
+        for _ in range(epochs):
+            rnd.shuffle(training_data)
+            for i in range(0, len(training_data), batch_size):
+                batch = training_data[i:i + batch_size]
+                bias_gradients, weight_gradients = self._gradient(batch)
+                bias_delta = cm.aslist(learning_rate * -bias_gradients)
+                weight_delta = cm.aslist(learning_rate * -weight_gradients)
+                for layer in reversed(self._layers):
+                    layer.adjust(bias_delta, weight_delta)
+            costs.append(self._cost(training_data))
+        return costs
+
+    def _cost(self, data):
+        """
+        Calculates the cost function on a given dataset.
+        :param data: List of data pairs (input, expected output), which must match the
+                     size of the input and output layers, respectively.
+        :return: Cost of the dataset.
+        """
+        cost = sum(self._cost_function.cost(self.feedforward(x), y) for x, y in data) / len(data)
+        return cost
+
+    def _gradient(self, training_data):
+        """
+        Calculates the gradient of the cost function for all training samples.
+        Use the fact that the derivative of a sum is equal to the sum of the derivatives of each
+        term, when taking the derivative of the cost function.
+        :param training_data: List of training pairs (input, expected output), which must match the
+                              size of the input and output layers, respectively.
+        :return: Tuple containing bias gradients and weight gradients.
+        """
+        bias_gradients, weight_gradients = self._backpropagation(*training_data[0])
+        for x, y in training_data[1:]:
+            sample_bias_gradients, sample_weight_gradients = self._backpropagation(x, y)
+            bias_gradients += sample_bias_gradients
+            weight_gradients += sample_weight_gradients
+        bias_gradients /= len(training_data)
+        weight_gradients /= len(training_data)
+        return bias_gradients, weight_gradients
+
+    def _backpropagation(self, x, y):
+        """
+        Calculates the gradient of the cost function for a single training sample, using backpropagation.
+        :param x: Input, shape shall match the input layer.
+        :param y: Expected output, shape is determined by the output layer.
+        :return: Tuple containing bias gradients and weight gradients.
+        """
+        bias_gradients = []
+        weight_gradients = []
+        output = self.feedforward(x)
+        dc = self._cost_function.cost_derivative(output, y)
+        for layer in reversed(self._layers):
+            dc = layer.backpropagate(dc, bias_gradients, weight_gradients)
+        return cm.asarray(bias_gradients[::-1]), cm.asarray(weight_gradients[::-1])
 
 
 class Layer(abc.ABC):
