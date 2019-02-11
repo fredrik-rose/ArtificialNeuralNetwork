@@ -23,6 +23,25 @@ def sigmoid_derivative(z):
     return np.exp(-z) / ((1 + np.exp(-z)) ** 2)
 
 
+def relu(z):
+    """
+    The rectified linear unit (ReLU) function.
+    Could e.g. be used as an activation function in an artificial neural network.
+    :param z: The input.
+    :return: ReLU(z).
+    """
+    return np.maximum(0, z)
+
+
+def relu_derivative(z):
+    """
+    The derivative of the rectified linear unit (ReLU) function.
+    :param z: The input.
+    :return: ReLU'(z).
+    """
+    return 1 * (z > 0)
+
+
 def asarray(array):
     """
     Converts the input to a numpy array.
