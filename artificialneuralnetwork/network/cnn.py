@@ -373,3 +373,28 @@ class Cost(abc.ABC):
         :return: The derivative of the cost function.
         """
         pass
+
+
+class SingleClassCrossEntropy(Cost):
+    """
+    A single-class cross-entropy (also known as the negative log likelihood of the Bernoulli
+    distribution) cost function.
+    """
+
+    def feedforward(self, x):
+        """
+        See the Cost class.
+        """
+        return cm.sigmoid(x)
+
+    def cost(self, a, y):
+        """
+        See the Cost class.
+        """
+        return -np.sum(np.nan_to_num(y * np.log(a) + (1 - y) * np.log(1 - a)))
+
+    def cost_derivative(self, a, y):
+        """
+        See the Cost class.
+        """
+        return a - y
