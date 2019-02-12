@@ -7,21 +7,25 @@ and Deep Learning": http://neuralnetworksanddeeplearning.com/index.html.
 # Usage
 
 ```
-$ python main.py -h
-usage: main.py [-h] [-t] [-e] [-x]
+$ python main.py --help
+usage: main.py [-h] [-c {mlp,cnn}] [-t] [-a] [-n N] [-e] [-x]
 
 Handwritten-digit classifier.
 
 optional arguments:
-  -h, --help  show this help message and exit
-  -t          train the classifier
-  -e          evaluate the classifier
-  -x          visualize images
+  -h, --help    show this help message and exit
+  -c {mlp,cnn}  classifier backbone (default: mlp)
+  -t            train the classifier (default: False)
+  -a            use data augmentation (default: False)
+  -n N          use only every N:th training sample (default: 1)
+  -e            evaluate the classifier (default: False)
+  -x            visualize images (default: False)
 ```
 
 Start by running the application using the '-t' argument to train a classifier, possibly with the '-e' argument for
-evaluation after each training epoch. Once the classifier is trained run with '-e' to evaluate on the test dataset or
-'-x' to visualize subsets of correctly and incorrectly classified images.
+evaluation after each training epoch. Note that the training will take a long time to complete. Once the classifier is
+trained run with '-e' to evaluate on the test dataset or '-x' to visualize subsets of correctly and incorrectly
+classified images.
 
 ## Test
 
@@ -31,23 +35,26 @@ $ python -m pytest
 ============================= test session starts =============================
 platform win32 -- Python 3.5.3, pytest-3.0.7, py-1.4.33, pluggy-0.4.0
 rootdir: D:\PycharmProjects\ArtificialNeuralNetwork, inifile:
-collected 4 items
+collected 10 items
 
+artificialneuralnetwork\network\tests\cnn_test.py ......
 artificialneuralnetwork\network\tests\mlp_test.py ....
 
-========================== 4 passed in 0.85 seconds ===========================
+========================== 10 passed in 8.85 seconds ==========================
 ```
 
 ## Dependencies
 
 * matplotlib
 * numpy
+* scipy
 
 # Algorithm
 
-The core of the application is the multilayer perceptron (MLP) network. It is able to learn from example data using the
-stochastic gradient descent algorithm. Backpropagation is used for calculating the partial derivatives of the gradient.
-The network can then feedforward (run) an input through the network, producing the (hopefully) expected output.
+The core of the application is the artificial neural network, either a multilayer perceptron (MLP) network or a
+convolutional neural network (CNN). It is able to learn from example data using the stochastic gradient descent
+algorithm. Backpropagation is used for calculating the partial derivatives of the gradient. The network can then
+feedforward (run) an input through the network, producing the (hopefully) expected output.
 
 ## Details
 
@@ -86,4 +93,3 @@ The application uses the following artificial neural network techniques:
 Other techniques to consider, currently not implemented:
  * Batch normalization
  * Adam optimizer
- * ReLU activation functions
