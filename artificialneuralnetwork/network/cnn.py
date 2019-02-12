@@ -1,5 +1,11 @@
 """
 Convolutional neural network (CNN).
+
+The generic neural network model supports networks with arbitrary types of layers and an arbitrary
+deep network in a simple and nice way, similar to most popular artificial neural network frameworks.
+Each layer knows how to feedforward the input from the previous layer and how to backpropagate the
+gradients. Also the cost (also known as loss) functions are generic to easily support different
+kinds of costs.
 """
 import abc
 import random as rnd
