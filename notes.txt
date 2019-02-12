@@ -1,0 +1,15 @@
+USE
+ * Tensorflow, keras
+ * Monitor/visualize using tensorboard
+ * ReLU
+ * Adam
+ * Batch normalization
+ * Softmax as last layer for classification problems
+ * Search for good hyperparameters with random search (not grid search)
+ * Ensemble of nets will always increase performance
+
+
+STARTING POINT
+ * Momentum = 0.9
+ * Second_momentum = 0.999
+ * Learning rate = 1e-3 or 5e-4
