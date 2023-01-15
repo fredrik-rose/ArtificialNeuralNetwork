@@ -1,7 +1,7 @@
 # ArtificialNeuralNetwork
 
 A handwritten-digit classifier application. Trains and evaluates a classifier on the MNIST dataset. Currently not much
-fun since it do not accept handwritten digits from the user. This application was inspired by the book "Neural Networks
+fun since it do not accept handwritten digits from the user. This project was inspired by the book "Neural Networks
 and Deep Learning": http://neuralnetworksanddeeplearning.com/index.html.
 
 # Usage
@@ -22,9 +22,9 @@ optional arguments:
   -x            visualize images (default: False)
 ```
 
-Start by running the application using the '-t' argument to train a classifier, possibly with the '-e' argument for
+Start by running the application using the `-t` argument to train a classifier, possibly with the `-e` argument for
 evaluation after each training epoch. Note that the training will take a long time to complete. Once the classifier is
-trained run with '-e' to evaluate on the test dataset or '-x' to visualize subsets of correctly and incorrectly
+trained run with `-e` to evaluate on the test dataset or `-x` to visualize subsets of correctly and incorrectly
 classified images.
 
 ## Test
@@ -58,9 +58,9 @@ feedforward (run) an input through the network, producing the (hopefully) expect
 
 ## Details
 
-An artificial neural network is basically a function of many variables (the weights and biases), F(w,b). A cost
-function, C(F(w,b), Y), is used for determine the distance between the actual output and the expected ground truth Y.
-The goal of training a network is to minimize this cost function.
+An artificial neural network is basically a function of many variables (the weights and biases), `F(w,b)`. A cost
+function, `C(F(w,b), Y)`, is used for determine the distance between the actual output and the expected ground truth
+`Y`. The goal of training a network is to minimize this cost function.
 
 The minimization technique used is gradient descent. This technique calculates the gradient (the partial derivative of
 each variable) of a function (in this case the cost function) and then takes a step towards the negative gradient,
@@ -80,6 +80,7 @@ decides the number of whole iterations through the training data.
 ## Artificial Neural Network Techniques
 
 The application uses the following artificial neural network techniques:
+
  * Split dataset into training, validation (used for hyper parameter tuning) and test
  * Data augmentation
  * Babysitting training: visualization of loss and accuracy
@@ -91,5 +92,6 @@ The application uses the following artificial neural network techniques:
  * Learning rate decay
 
 Other techniques to consider, currently not implemented:
+
  * Batch normalization
  * Adam optimizer
