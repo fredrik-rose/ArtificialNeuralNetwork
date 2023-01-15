@@ -27,6 +27,18 @@ evaluation after each training epoch. Note that the training will take a long ti
 trained run with `-e` to evaluate on the test dataset or `-x` to visualize subsets of correctly and incorrectly
 classified images.
 
+## Example
+
+```
+$ python main.py -x
+```
+
+Example of correctly classified digits:
+<img src="img/correct.png" width="1000"/>
+
+Example of incorrectly classified digits:
+<img src="img/incorrect.png" width="1000"/>
+
 ## Test
 
 Stand in the root of the project.
